@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
+    <head>
+        <title>Login - Secure Web App</title>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel="stylesheet" th:href="@{/styles.css}" type="text/css"/>
+    </head>
+    <body>
+        <main class="container">
+            <div class="auth-header">
+                <h1>Sign In</h1>
+                <span class="security-badge">🔒 Secure Authentication</span>
+            </div>
+            
+            <div th:if="${param.error}" class="alert alert-error">
+                ⚠️ Invalid username and password.
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success">
+                ✓ You have been logged out successfully.
+            </div>
+            
+            <form th:action="@{/login}" method="post">
+                <div>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autofocus/>
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required/>
+                </div>
+                <div>
+                    <input type="submit" value="Sign In"/>
+                </div>
+            </form>
+            
+            <p style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #666;">
+                This connection is secured with TLS/SSL encryption.
+            </p>
+        </main>
+    </body>
+</html>

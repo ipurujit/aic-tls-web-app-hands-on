@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+    <head>
+        <title>Greeting - Secure Web App</title>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel="stylesheet" th:href="@{/styles.css}" type="text/css"/>
+    </head>
+    <body>
+        <main class="container">
+            <div class="greeting">
+                <h1 th:inline="text">👋 Hello <span th:remove="tag" sec:authentication="name">User</span>!</h1>
+                <p>Welcome to the Secure Web Application</p>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <p style="color: #666; font-size: 0.95rem;">
+                    You are successfully authenticated and your session is protected by TLS/SSL encryption.
+                </p>
+            </div>
+            
+            <form th:action="@{/logout}" method="post" class="logout-form">
+                <input type="submit" value="Sign Out"/>
+            </form>
+        </main>
+    </body>
+</html>

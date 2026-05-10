@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+    <head>
+        <title>Home - Secure Web App</title>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel="stylesheet" th:href="@{/styles.css}" type="text/css"/>
+    </head>
+    <body>
+        <main class="container">
+            <div class="auth-header">
+                <h1>🏠 Welcome</h1>
+                <span class="security-badge">Authentication & TLS Demo</span>
+            </div>
+            
+            <div class="welcome-section">
+                <p>This application demonstrates secure authentication and TLS/SSL encryption.</p>
+                <p>Experience the benefits of a protected web application with proper security measures.</p>
+            </div>
+            
+            <div class="action-links">
+                <a th:href="@{/hello}">View Greeting →</a>
+            </div>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background-color: #f0f7ff; border-radius: 6px; border-left: 4px solid #0066cc;">
+                <p style="font-size: 0.9rem; color: #1a1a1a; margin: 0;">
+                    <strong>🔒 Security Features:</strong>
+                </p>
+                <ul style="margin-top: 0.5rem; margin-left: 1.5rem; font-size: 0.9rem; color: #4a4a4a;">
+                    <li>TLS/SSL encrypted connection</li>
+                    <li>Authentication required</li>
+                    <li>Secure session management</li>
+                </ul>
+            </div>
+        </main>
+    </body>
+</html>
