@@ -1,4 +1,4 @@
-spring:
+pspring:
   application:
     name: securewebapp
 
@@ -9,3 +9,11 @@ server:
     key-store-password: "$SERVER_SSL_KEY_STORE_PASSWORD" # The 'export' password used when generating the PKCS12 file
     key-store-type: PKCS12
     key-alias: server # Defined using -name arg while generating the certificate
+
+    # Client Validation (TrustStore)
+    trust-store: classpath:trust/truststore.p12
+    trust-store-password: "$SERVER_SSL_TRUST_STORE_PASSWORD" # The 'export' password used when generating the PKCS12 file
+    trust-store-type: PKCS12
+
+    # This triggers mTLS
+    client-auth: need # Options: none, want, need
