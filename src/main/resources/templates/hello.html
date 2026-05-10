@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org"
-      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org" lang="en">
     <head>
         <title>Greeting - Secure Web App</title>
         <meta charset="UTF-8"/>
@@ -10,7 +9,7 @@
     <body>
         <main class="container">
             <div class="greeting">
-                <h1 th:inline="text">👋 Hello <span th:remove="tag" sec:authentication="name">User</span>!</h1>
+                <h1 th:inline="text">👋 Hello <span th:remove="tag">User</span>!</h1>
                 <p>Welcome to the Secure Web Application</p>
             </div>
             
