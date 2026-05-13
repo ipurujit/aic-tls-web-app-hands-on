@@ -8,4 +8,4 @@ server:
     key-store: classpath:keys/fullchain.p12 # Contains both the intermediate CA and server certificates
     key-store-password: "$SERVER_SSL_KEY_STORE_PASSWORD" # The 'export' password used when generating the PKCS12 file
     key-store-type: PKCS12
-    key-alias: localhost # Defined using -name arg while generating the certificate
+    key-alias: server # Defined using -name arg while generating the certificate

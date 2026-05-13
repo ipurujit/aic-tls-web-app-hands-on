@@ -59,7 +59,7 @@ The `application.yaml` configures:
 
 **Linux:**
 ```bash
-sudo cp scripts/rootCA.crt /usr/local/share/ca-certificates/
+sudo cp scripts/output/root/rootCA.crt /usr/local/share/ca-certificates/
 sudo update-ca-certificates
 ```
 

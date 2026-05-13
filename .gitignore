@@ -33,3 +33,5 @@ build/
 .vscode/
 
 *.env
+*.p12
+output/
