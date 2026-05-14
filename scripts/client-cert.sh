@@ -22,7 +22,7 @@ openssl genrsa -out output/client/client.key 2048
 
 echo ""
 echo -e "${GREEN}>>> Generating Certificate Signing Request (CSR) for Client${NC}"
-MSYS_NO_PATHCONV=1 openssl req -new -key output/client/client.key -out output/client/client.csr \
+openssl req -new -key output/client/client.key -out output/client/client.csr \
     -config client.conf
 
 echo ""
@@ -47,7 +47,7 @@ cat output/client/client.crt output/intermediate/intermediate.crt > output/fullc
 echo ">>> Converting Client Certificate to PKCS#12 format (.p12)"
 echo -e "${BLUE}    NOTE: Enter NEW passphrase for PKCS#12 file (different from private key passphrases)${NC}"
 echo ""
-MSYS_NO_PATHCONV=1 openssl pkcs12 -export -in output/fullchain_client.crt -inkey output/client/client.key \
+openssl pkcs12 -export -in output/fullchain_client.crt -inkey output/client/client.key \
     -name "client" -out output/fullchain_client.p12
 
 echo -e "${GREEN}✓ Certificate chain conversion complete!${NC}"

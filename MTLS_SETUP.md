@@ -1,101 +1,102 @@
 # mTLS Setup Tutorial for Spring Boot Application
 
-This guide explains how to add mTLS support.
+This guide explains how to implement **Mutual TLS (mTLS)** support. In this configuration, the server validates the client's identity using a truststore, and the client validates the server using a keystore.
 
 ## 📁 Files Added/Modified
 
 ### Certificate Generation Script
-- **`scripts/client-cert.sh`** - Generates client keys, certs, fullchain_client.p12 and truststore.p12
+
+* **`scripts/client-cert.sh`** - Automates client key generation, CSR signing via Intermediate CA, and truststore creation.
 
 ### Certificate Extension Files
-- **`scripts/client.ext`** - Defines client certificate usage and hostname validation
+
+* **`scripts/client.conf`** - Defines client certificate identity (CN=localhost), usage constraints (CA:FALSE), and SANs (`localhost`, `127.0.0.1`).
 
 ### Spring Boot Configuration
-- **`src/main/resources/application.yaml`** - mTLS configuration for HTTPS on port 8443
-- **`.env.example`** - Environment variable template for keystore password
 
-## 🔐 Certificate Chain Generation
+* **`src/main/resources/application.yaml`** - Configures `server.ssl.client-auth: need` and points to the new truststore.
+* **`.env.example`** - Template for `SERVER_SSL_KEY_STORE_PASSWORD` and `SERVER_SSL_TRUST_STORE_PASSWORD`.
 
-Run the certificate generation script:
+## 🔐 Client Certificate & Truststore Generation
+
+Run the client generation script:
 
 ```bash
 cd scripts
 chmod +x client-cert.sh
 ./client-cert.sh
+
 ```
 
-The script creates:
-1. **Client Certificate** (2048-bit RSA, 1 year validity)
-2. **PKCS#12 Bundle** (`fullchain_client.p12`) for Spring Boot
-3. **Truststore** (`truststore.p12`) containing Root CA for client authentication
+The script performs the following:
 
-## ⚙️ Spring Boot TLS Configuration
+1. **Client Private Key**: Generates a 2048-bit RSA key (`client.key`).
+2. **Client Certificate**: Signs a CSR with the Intermediate CA for 365 days of validity (`client.crt`).
+3. **PKCS#12 Bundle**: Merges the client cert and intermediate cert into `fullchain_client.p12` for browser/app import.
+4. **Truststore**: Uses `keytool` to create `truststore.p12` containing the **Root CA**, allowing the server to verify any client cert signed by this chain.
+
+## ⚙️ Spring Boot mTLS Configuration
 
 ### 1. Environment Variables
-Create `.env` file from `.env.example`:
+
+Create `.env` file to manage sensitive passwords:
+
 ```bash
 cp .env.example .env
-# Edit .env to set your keystore password
+# Set SERVER_SSL_TRUST_STORE_PASSWORD (min 6 characters for keytool)
+
 ```
 
 ### 2. Application Configuration
-The `application.yaml` configures:
-- **Truststore**: `classpath:trust/truststore.p12`
-- **Password**: From environment variable `$SERVER_SSL_TRUST_STORE_PASSWORD`
-- **Type**: PKCS12 format
-- **Client-auth**: `need` (enforces client certificate authentication)
 
-### 3. Certificate Installation
-**Important**: Install `fullchain_client.p12` in your system's trust store:
+The `application.yaml` must be updated to enforce identity:
 
-**Windows/macOS:**
-- Double-click on the file and follow the prompts to add it to the system's trusted certificates.
+* **Truststore Path**: `classpath:trust/truststore.p12`.
+* **Client Authentication**: Set to `need` to reject any connection without a valid client certificate.
 
-**Linux:**
-- Update in browser
+### 3. Client Certificate Installation
+
+To access the application via a browser (e.g., Brave, Chrome):
+
+* **Windows/macOS**: Double-click `output/fullchain_client.p12` to install it into your personal certificate store.
+* **Brave/Chrome**: Go to `brave://certificate-manager/` and import the `.p12` file under "Your Certificates".
 
 ## 🚀 Running the Application
 
 ```bash
-# Set environment variable using .env file
+# Load passwords into environment
 export $(cat .env | xargs)
 
 # Run Spring Boot app
 ./mvnw spring-boot:run
+
 ```
 
-Access your application at: `https://localhost:8443`
+Access your application at: `https://localhost:8443`. The browser will now prompt you to select the "client" certificate you just installed.
 
 ## 📋 Certificate Files Overview
 
 | File | Purpose | Security Level |
-|------|---------|----------------|
-| `rootCA.key` | Root CA private key | 🔴 Keep secure |
-| `rootCA.crt` | Root CA certificate | Install in trust store |
-| `intermediate.key` | Intermediate CA private key | 🔴 Keep secure |
-| `intermediate.crt` | Intermediate CA certificate | Standard |
+| --- | --- | --- |
 | `client.key` | Client private key | 🔴 Keep secure |
 | `client.crt` | Client certificate | Standard |
-| `fullchain_client.crt` | Client cert + chain | For client authentication |
-| `fullchain_client.p12` | PKCS#12 bundle for client | For Java applications |
-| `truststore.p12` | Truststore containing Root CA | For client trust validation |
+| `fullchain_client.p12` | PKCS#12 bundle (Cert + Key) | 🔴 Import to Browser |
+| `truststore.p12` | Server-side store of trusted Root CAs | 🟡 Copy to `src/main/resources/trust/` |
 
 ## 🔍 Verification
 
-Test your TLS setup:
-```bash
-# Check certificate chain
-openssl s_client -connect localhost:8443 -servername localhost
+Test the mTLS handshake:
 
-# Verify certificate details
-openssl x509 -in scripts/client.crt -text -noout
+```bash
+# Verify that the server requests a client certificate
+openssl s_client -connect localhost:8443 -brief
+
 ```
 
 ## 🛡️ Security Notes
 
-- **Private keys** are encrypted with AES-256
-- **Certificate chain** provides proper PKI hierarchy
-- **Extensions** enforce security constraints
-- **Subject Alternative Names** support localhost and 127.0.0.1
+* **AuthorityKeyIdentifier**: The `keyid:always,issuer` directive ensures the client certificate correctly points to the Intermediate CA.
+* **Pathlen**: The intermediate CA's `pathlen:0` prevents this client certificate from being used to sign further certificates.
+* **SAN Validation**: Modern clients require the `subjectAltName` (localhost) to match the URL exactly.
 
-Your Spring Boot application now supports secure with mTLS connections! 🔒</content>
+Your Spring Boot application now supports secure with mTLS connections! 🔒
