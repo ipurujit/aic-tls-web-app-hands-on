@@ -1,0 +1,43 @@
+@startuml
+skinparam ParticipantPadding 20
+skinparam BoxPadding 10
+
+title SSL/TLS Certificate Chain Generation Flow
+
+box "Certificate Authority (CA)" #LightBlue
+    participant "Root CA" as Root
+    participant "Intermediate CA" as Inter
+end box
+
+box "Server Side" #LightGreen
+    participant "Web Server" as Server
+    participant "Application (PKCS#12)" as App
+end box
+
+== Step 1: Root CA Generation ==
+Root -> Root: Generate Private Key (rootCA.key)
+Root -> Root: Self-sign Root Certificate (rootCA.crt)
+note right: Valid for 3650 days
+
+== Step 2: Intermediate CA Generation ==
+Inter -> Inter: Generate Private Key (intermediate.key)
+Inter -> Inter: Create CSR (intermediate.csr)
+Inter -> Root: Send CSR for signing
+Root -> Inter: Sign with rootCA.key
+Inter -> Inter: Output intermediate.crt
+note right: Valid for 1825 days
+
+== Step 3: Server Certificate Generation ==
+Server -> Server: Generate Private Key (server.key)
+Server -> Server: Create CSR (server.csr)
+Server -> Inter: Send CSR for signing
+Inter -> Server: Sign with intermediate.key
+Server -> Server: Output server.crt
+note right: Valid for 200 days
+
+== Step 4: Chain & Conversion ==
+Server -> Server: Combine (server.crt + intermediate.crt)
+Server -> App: Export Key + Chain to fullchain.p12
+note over App: Ready for Spring Boot\n/src/main/resources/keys/
+
+@enduml
