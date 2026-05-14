@@ -1,109 +1,99 @@
+This updated guide provides a precise breakdown of the `cert-chain.sh` script logic and the resulting PKI hierarchy. The documentation now correctly reflects the file naming and procedural steps found in your script.
+
+---
+
 # TLS Setup Tutorial for Spring Boot Application
 
-This guide explains how to add TLS (HTTPS) support to your Spring Boot application using a custom certificate chain.
+![Flow](./diagrams/certs-SSL_TLS_Certificate_Chain_Generation_Flow.png)
 
-## 📁 Files Added/Modified
+This guide explains how to implement a manual **Chain of Trust** (Root CA → Intermediate CA → Entity) for a Spring Boot application. This setup mimics a professional Public Key Infrastructure (PKI) environment.
 
-### Certificate Generation Script
-- **`scripts/cert-chain.sh`** - Generates complete SSL/TLS certificate chain (Root CA → Intermediate CA → Server Certificate)
+## 📁 Files & Architecture
 
-### Certificate Extension Files
-- **`scripts/intermediate.ext`** - Defines intermediate CA constraints and key usage
-- **`scripts/localhost.ext`** - Defines server certificate usage and hostname validation
+### Certificate Generation Infrastructure
 
-### Spring Boot Configuration
-- **`src/main/resources/application.yaml`** - SSL configuration for HTTPS on port 8443
-- **`.env.example`** - Environment variable template for keystore password
+* **`scripts/cert-chain.sh`**: A comprehensive automation script that manages key generation, CSR creation, and multi-tier signing.
+* **`scripts/root.conf`**: Configures the Root CA identity and its ability to sign subordinate authorities.
+* **`scripts/intermediate.conf`**: Defines constraints for the Intermediate CA, such as the `pathlen` (limiting the chain length).
+* **`scripts/server.conf`**: Specifies Subject Alternative Names (SAN) for `localhost`, essential for modern browser validation.
 
-## 🔐 Certificate Chain Generation
+### Spring Boot Integration
 
-Run the certificate generation script:
+* **`src/main/resources/application.yaml`**: Configures the Servlet container to use the generated PKCS#12 bundle.
+* **`.env.example`**: Template for the sensitive `SERVER_SSL_KEY_STORE_PASSWORD` variable.
+
+---
+
+## 🔐 The `cert-chain.sh` Workflow
+
+The script executes a four-step cryptographic process to build a trusted path.
 
 ```bash
 cd scripts
 chmod +x cert-chain.sh
 ./cert-chain.sh
+
 ```
 
-The script creates:
-1. **Root CA** (4096-bit RSA, 10 years validity)
-2. **Intermediate CA** (4096-bit RSA, 5 years validity)
-3. **Server Certificate** (2048-bit RSA, 1 year validity)
-4. **PKCS#12 Bundle** (`fullchain.p12`) for Spring Boot
+### 1. Root CA (The Anchor)
 
-## ⚙️ Spring Boot TLS Configuration
+* **Action**: Generates a 4096-bit RSA key and a self-signed X.509 certificate.
+* **Validity**: 3650 days (10 years).
+* **Security**: Uses AES-256 encryption for the private key (`rootCA.key`).
 
-### 1. Environment Variables
-Create `.env` file from `.env.example`:
-```bash
-cp .env.example .env
-# Edit .env to set your keystore password
-```
+### 2. Intermediate CA (The Signer)
 
-### 2. Application Configuration
-The `application.yaml` configures:
-- **Port**: 8443 (standard HTTPS port)
-- **Keystore**: `classpath:keys/fullchain.p12`
-- **Password**: From environment variable `$SERVER_SSL_KEY_STORE_PASSWORD`
-- **Type**: PKCS12 format
-- **Alias**: `localhost`
+* **Action**: Creates a CSR signed by the Root CA.
+* **Purpose**: Acts as the operational authority so the Root key can remain "offline".
+* **Validity**: 1825 days (5 years).
 
-### 3. Certificate Installation
-**Important**: Install `rootCA.crt` in your system's trust store:
+### 3. Server Certificate (The Identity)
 
-**Windows:**
-- Import `rootCA.crt` → Trusted Root Certification Authorities
+* **Action**: Generates a 2048-bit RSA key and a certificate signed by the Intermediate CA.
+* **Validity**: 200 days.
+* **Scope**: Validates `localhost` via the `v3_server_req` extensions.
 
-**macOS:**
-- Double-click `rootCA.crt` → System keychain
+### 4. Bundling (The Delivery)
 
-**Linux:**
-```bash
-sudo cp scripts/output/root/rootCA.crt /usr/local/share/ca-certificates/
-sudo update-ca-certificates
-```
+* **Action**: Concatenates `server.crt` and `intermediate.crt` into `fullchain.crt`.
+* **Conversion**: Exports the chain and private key into `fullchain.p12` for Spring Boot compatibility.
 
-## 🚀 Running the Application
+---
+
+## ⚙️ Application Configuration
+
+### 1. Keystore Setup
+
+Move the generated bundle to the resources directory:
 
 ```bash
-# Set environment variable
-export SERVER_SSL_KEY_STORE_PASSWORD=your_password_here
+cp output/fullchain.p12 ../src/main/resources/keys/
 
-# Run Spring Boot app
-./mvnw spring-boot:run
 ```
 
-Access your application at: `https://localhost:8443`
+### 2. Trust the Root
 
-## 📋 Certificate Files Overview
+For your browser to trust the application, you **must** manually import the **`rootCA.crt`** into your system's "Trusted Root Certification Authorities" store.
 
-| File | Purpose | Security Level |
-|------|---------|----------------|
-| `rootCA.key` | Root CA private key | 🔴 Keep secure |
-| `rootCA.crt` | Root CA certificate | Install in trust store |
-| `intermediate.key` | Intermediate CA private key | 🔴 Keep secure |
-| `intermediate.crt` | Intermediate CA certificate | Standard |
-| `localhost.key` | Server private key | 🔴 Keep secure |
-| `localhost.crt` | Server certificate | Standard |
-| `fullchain.crt` | Complete chain (server + intermediate) | For web servers |
-| `fullchain.p12` | PKCS#12 bundle | For Java applications |
+---
+
+## 📋 Certificate Files Reference
+
+| File | Type | Secret? | Destination |
+| --- | --- | --- | --- |
+| **`rootCA.key`** | RSA Key | **YES** | Secure Offline Storage |
+| **`rootCA.crt`** | X.509 | NO | Client OS Trust Store |
+| **`intermediate.crt`** | X.509 | NO | Bundled in Full Chain |
+| **`server.key`** | RSA Key | **YES** | Web Server / Keystore |
+| **`fullchain.p12`** | PKCS#12 | **YES** | `src/main/resources/keys/` |
 
 ## 🔍 Verification
 
-Test your TLS setup:
-```bash
-# Check certificate chain
-openssl s_client -connect localhost:8443 -servername localhost
+Once the app is running on `https://localhost:8443`, verify the chain:
 
-# Verify certificate details
-openssl x509 -in scripts/localhost.crt -text -noout
+```bash
+openssl s_client -connect localhost:8443 -showcerts
+
 ```
 
-## 🛡️ Security Notes
-
-- **Private keys** are encrypted with AES-256
-- **Certificate chain** provides proper PKI hierarchy
-- **Extensions** enforce security constraints
-- **Subject Alternative Names** support localhost and 127.0.0.1
-
-Your Spring Boot application now supports secure HTTPS connections! 🔒</content>
+You should see a depth of **2**, tracing back from the server to your custom Root CA.

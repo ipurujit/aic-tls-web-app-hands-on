@@ -31,7 +31,7 @@ echo ""
 echo -e "${RED}>>> Generating self-signed X.509 certificate for Root CA${NC}"
 echo -e "${BLUE}    NOTE: Re-enter passphrase for Root CA private key${NC}"
 echo ""
-MSYS_NO_PATHCONV=1 openssl req -x509 -new -nodes -key output/root/rootCA.key -sha256 -days 3650 -out output/root/rootCA.crt \
+openssl req -x509 -new -nodes -key output/root/rootCA.key -sha256 -days 3650 -out output/root/rootCA.crt \
     -config root.conf -extensions v3_ca
 
 echo -e "${GREEN}✓ Root CA created: rootCA.key and rootCA.crt (3650 days)${NC}"
@@ -49,7 +49,7 @@ echo ""
 echo -e "${YELLOW}>>> Generating Certificate Signing Request (CSR) for Intermediate CA${NC}"
 echo -e "${BLUE}    NOTE: Re-enter passphrase for Intermediate CA private key${NC}"
 echo ""
-MSYS_NO_PATHCONV=1 openssl req -new -key output/intermediate/intermediate.key -out output/intermediate/intermediate.csr \
+openssl req -new -key output/intermediate/intermediate.key -out output/intermediate/intermediate.csr \
     -config intermediate.conf
 
 echo ""
@@ -74,7 +74,7 @@ openssl genrsa -out output/server/server.key 2048
 
 echo ""
 echo -e "${GREEN}>>> Generating Certificate Signing Request (CSR) for Server${NC}"
-MSYS_NO_PATHCONV=1 openssl req -new -key output/server/server.key -out output/server/server.csr \
+openssl req -new -key output/server/server.key -out output/server/server.csr \
     -config server.conf
 
 echo ""
@@ -83,10 +83,10 @@ echo -e "${BLUE}    NOTE: Enter passphrase for Intermediate CA private key${NC}"
 echo -e "${BLUE}    WHY EXTENSIONS? They specify key usage, authentication, and hostname validation${NC}"
 echo ""
 openssl x509 -req -in output/server/server.csr -CA output/intermediate/intermediate.crt -CAkey output/intermediate/intermediate.key \
-    -CAcreateserial -out output/server/server.crt -days 365 -sha256 \
+    -CAcreateserial -out output/server/server.crt -days 200 -sha256 \
     -extfile server.conf -extensions v3_server_req
 
-echo -e "${GREEN}✓ Server Certificate created: server.crt (365 days)${NC}"
+echo -e "${GREEN}✓ Server Certificate created: server.crt (200 days)${NC}"
 echo ""
 
 # ==================== CERTIFICATE CHAIN CONVERSION ====================
@@ -99,7 +99,7 @@ cat output/server/server.crt output/intermediate/intermediate.crt > output/fullc
 echo ">>> Converting Server Certificate to PKCS#12 format (.p12)"
 echo -e "${BLUE}    NOTE: Enter NEW passphrase for PKCS#12 file (different from private key passphrases)${NC}"
 echo ""
-MSYS_NO_PATHCONV=1 openssl pkcs12 -export -in output/fullchain.crt -inkey output/server/server.key \
+openssl pkcs12 -export -in output/fullchain.crt -inkey output/server/server.key \
     -name "server" -out output/fullchain.p12
 
 echo -e "${GREEN}✓ Certificate chain conversion complete!${NC}"
